@@ -1,0 +1,78 @@
+package com.apache.ofbiz.mcp.tools;
+
+import org.springframework.web.reactive.function.client.WebClient;
+import com.apache.ofbiz.mcp.config.AppConfig;
+import org.springframework.stereotype.Component;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class UpdateBatchExampleTool implements ToolHandler {
+
+    private final AppConfig appConfig;
+    private final WebClient webClient;
+
+    public UpdateBatchExampleTool(AppConfig appConfig, WebClient.Builder builder) {
+        this.appConfig = appConfig;
+        this.webClient = builder.baseUrl(appConfig.getBackendApiBase()).build();
+    }
+
+    @Override
+    public String getName() {
+        return "updateBatchExample";
+    }
+
+    @Override
+    public Map<String, Object> getDefinition() {
+        return Map.of(
+                "name", getName(),
+                "description", "Updates batch of example records in OFBiz.",
+                "inputSchema", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "ids", Map.of("type", "array", "items", Map.of("type", "string")),
+                                "description", Map.of("type", "string"))));
+    }
+
+    @Override
+    public Object execute(Map<String, Object> arguments, String downstreamToken) {
+        List<String> ids = (List<String>) arguments.getOrDefault("ids", List.of());
+        String descriptionTemplate = (String) arguments.getOrDefault("description", "Updated at " + Instant.now());
+
+        List<String> successIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (String id : ids) {
+            String description = descriptionTemplate + " " + Instant.now();
+
+            Map<String, Object> payload = Map.of(
+                    "exampleId", id,
+                    "description", description);
+
+            try {
+                webClient.put()
+                        .uri("/rest/example-rest/example")
+                        .header("Authorization", "Bearer " + appConfig.getBackendAccessToken())
+                        .bodyValue(payload)
+                        .retrieve()
+                        .toBodilessEntity()
+                        .block();
+
+                successIds.add(id);
+
+            } catch (Exception e) {
+                errors.add("Error updating example " + id + ": " + e.getMessage());
+            }
+        }
+
+        String resultText = "Updated " + successIds.size() + " examples. IDs: " + successIds;
+        if (!errors.isEmpty()) {
+            resultText += "\nErrors: " + errors;
+        }
+
+        return Map.of("content", java.util.List.of(
+                Map.of("type", "text", "text", resultText)));
+    }
+}
