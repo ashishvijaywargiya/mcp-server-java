@@ -79,8 +79,15 @@ public class ExampleRunner {
             case "test-all":
                 runTestSequence(createTool, updateTool, deleteTool);
                 break;
+            case "test-scenario":
+                // Args: createCount, deleteCount
+                int cCount = actionArgs.length > 0 ? Integer.parseInt(actionArgs[0]) : 5;
+                int dCount = actionArgs.length > 1 ? Integer.parseInt(actionArgs[1]) : 2;
+                runCustomScenario(createTool, updateTool, deleteTool, cCount, dCount);
+                break;
             default:
-                System.out.println("Unknown action: " + action + ". Use 'create', 'update', 'delete', or 'test-all'.");
+                System.out.println("Unknown action: " + action
+                        + ". Use 'create', 'update', 'delete', 'test-all', or 'test-scenario'.");
         }
     }
 
@@ -132,18 +139,23 @@ public class ExampleRunner {
 
     private static void runTestSequence(CreateExamplesTool create, UpdateExamplesTool update,
             DeleteExamplesTool delete) {
-        System.out.println("=== Starting Full Test Sequence ===");
+        runCustomScenario(create, update, delete, 3, 3);
+    }
+
+    private static void runCustomScenario(CreateExamplesTool create, UpdateExamplesTool update,
+            DeleteExamplesTool delete, int createCount, int deleteCount) {
+        System.out.println("=== Starting Custom Scenario ===");
+        System.out.println("Plan: Create " + createCount + " -> Update All -> Delete " + deleteCount);
 
         // 1. Create
-        System.out.println("\n[1/3] Creating 3 examples...");
-        Map<String, Object> createArgs = Map.of("count", 3, "prefix", "SeqTest");
+        System.out.println("\n[1/3] Creating " + createCount + " examples...");
+        Map<String, Object> createArgs = Map.of("count", createCount, "prefix", "CustomEx");
         Map<String, Object> createResult = (Map<String, Object>) create.execute(createArgs, null);
         System.out.println("Create Result: " + createResult.get("content"));
 
-        // Parse IDs from result (A bit hacky but works for the runner)
-        // Expected format: Result: [10100, 10101, ...]
+        // Parse IDs
         String resultText = createResult.get("content").toString();
-        Pattern pattern = Pattern.compile("(\\d{5})");
+        Pattern pattern = Pattern.compile("(\\d{5})"); // Match 5-digit IDs
         Matcher matcher = pattern.matcher(resultText);
         List<String> createdIds = new java.util.ArrayList<>();
         while (matcher.find()) {
@@ -154,21 +166,31 @@ public class ExampleRunner {
             System.out.println("No IDs created, aborting sequence.");
             return;
         }
+        System.out.println("Captured IDs: " + createdIds);
 
         // 2. Update
         System.out.println("\n[2/3] Updating created examples: " + createdIds);
         Map<String, Object> updateArgs = Map.of(
                 "ids", createdIds,
-                "description", "Sequence Update Test");
+                "description", "Scenario Update at " + java.time.Instant.now());
         Map<String, Object> updateResult = (Map<String, Object>) update.execute(updateArgs, null);
         System.out.println("Update Result: " + updateResult.get("content"));
 
         // 3. Delete
-        System.out.println("\n[3/3] Deleting the 3 examples...");
-        Map<String, Object> deleteArgs = Map.of("count", 3);
+        System.out.println("\n[3/3] Deleting " + deleteCount + " examples...");
+        Map<String, Object> deleteArgs = Map.of("count", deleteCount);
         Map<String, Object> deleteResult = (Map<String, Object>) delete.execute(deleteArgs, null);
-        System.out.println("Delete Result: " + deleteResult.get("content"));
 
-        System.out.println("\n=== Test Sequence Completed ===");
+        // Parse Deleted IDs (for verification)
+        String deleteText = deleteResult.get("content").toString();
+        matcher = pattern.matcher(deleteText);
+        List<String> deletedIds = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            deletedIds.add(matcher.group(1));
+        }
+        System.out.println("Delete Result: " + deleteResult.get("content"));
+        System.out.println("Deleted IDs: " + deletedIds);
+
+        System.out.println("\n=== Scenario Completed ===");
     }
 }
