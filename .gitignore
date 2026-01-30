@@ -4,3 +4,4 @@ target/
 .DS_Store
 .vscode/
 config/config.json
+build/
