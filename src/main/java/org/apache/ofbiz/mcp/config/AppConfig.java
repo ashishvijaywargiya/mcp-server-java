@@ -1,4 +1,4 @@
-package com.apache.ofbiz.mcp.config;
+package org.apache.ofbiz.mcp.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

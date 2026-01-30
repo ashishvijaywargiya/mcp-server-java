@@ -1,8 +1,8 @@
-package com.apache.ofbiz.mcp.controller;
+package org.apache.ofbiz.mcp.controller;
 
-import com.apache.ofbiz.mcp.model.JsonRpcRequest;
-import com.apache.ofbiz.mcp.model.JsonRpcResponse;
-import com.apache.ofbiz.mcp.tools.ToolHandler;
+import org.apache.ofbiz.mcp.model.JsonRpcRequest;
+import org.apache.ofbiz.mcp.model.JsonRpcResponse;
+import org.apache.ofbiz.mcp.tools.ToolHandler;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

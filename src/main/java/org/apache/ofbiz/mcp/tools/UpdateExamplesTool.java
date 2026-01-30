@@ -1,7 +1,7 @@
-package com.apache.ofbiz.mcp.tools;
+package org.apache.ofbiz.mcp.tools;
 
 import org.springframework.web.reactive.function.client.WebClient;
-import com.apache.ofbiz.mcp.config.AppConfig;
+import org.apache.ofbiz.mcp.config.AppConfig;
 import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -9,19 +9,19 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class UpdateBatchExampleTool implements ToolHandler {
+public class UpdateExamplesTool implements ToolHandler {
 
     private final AppConfig appConfig;
     private final WebClient webClient;
 
-    public UpdateBatchExampleTool(AppConfig appConfig, WebClient.Builder builder) {
+    public UpdateExamplesTool(AppConfig appConfig, WebClient.Builder builder) {
         this.appConfig = appConfig;
         this.webClient = builder.baseUrl(appConfig.getBackendApiBase()).build();
     }
 
     @Override
     public String getName() {
-        return "updateBatchExample";
+        return "updateExamples";
     }
 
     @Override

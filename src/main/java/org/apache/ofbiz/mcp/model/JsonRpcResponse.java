@@ -1,4 +1,4 @@
-package com.apache.ofbiz.mcp.model;
+package org.apache.ofbiz.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

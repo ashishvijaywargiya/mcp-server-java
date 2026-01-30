@@ -8,7 +8,7 @@
         <version>3.2.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.apache.ofbiz</groupId>
+    <groupId>org.apache.ofbiz</groupId>
     <artifactId>mcp-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>mcp-server-java</name>

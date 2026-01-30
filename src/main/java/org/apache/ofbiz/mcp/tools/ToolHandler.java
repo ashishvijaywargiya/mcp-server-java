@@ -1,4 +1,4 @@
-package com.apache.ofbiz.mcp.tools;
+package org.apache.ofbiz.mcp.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;

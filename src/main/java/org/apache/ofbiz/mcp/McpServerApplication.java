@@ -1,6 +1,6 @@
-package com.apache.ofbiz.mcp;
+package org.apache.ofbiz.mcp;
 
-import com.apache.ofbiz.mcp.config.AppConfig;
+import org.apache.ofbiz.mcp.config.AppConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
