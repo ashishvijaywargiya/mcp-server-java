@@ -4,8 +4,6 @@ import org.apache.ofbiz.mcp.config.AppConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,10 +48,14 @@ public class DeleteExamplesTool implements ToolHandler {
                                                                                               // reverse sort
                     .limit(count).collect(Collectors.toList());
 
-            ids.forEach(id -> client.delete()
-                    .uri(u -> u.path("/rest/example-rest/example").queryParam("exampleId", id).build())
-                    .header("Authorization", "Bearer " + cfg.getBackendAccessToken()).retrieve().toBodilessEntity()
-                    .block());
+            reactor.core.publisher.Flux.fromIterable(ids)
+                    .flatMap(id -> client.delete()
+                            .uri(u -> u.path("/rest/example-rest/example").queryParam("exampleId", id).build())
+                            .header("Authorization", "Bearer " + cfg.getBackendAccessToken()).retrieve()
+                            .toBodilessEntity())
+                    .collectList()
+                    .block();
+
             return Map.of("content",
                     List.of(Map.of("type", "text", "text", "Deleted " + ids.size() + " examples: " + ids)));
         } catch (Exception e) {

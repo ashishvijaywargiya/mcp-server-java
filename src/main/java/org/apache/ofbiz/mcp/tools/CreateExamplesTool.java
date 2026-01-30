@@ -6,7 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 @Component
 public class CreateExamplesTool implements ToolHandler {
@@ -34,18 +33,23 @@ public class CreateExamplesTool implements ToolHandler {
     public Object execute(Map<String, Object> serverArgs, String downstreamToken) {
         int count = ((Number) serverArgs.getOrDefault("count", 5)).intValue();
         String prefix = (String) serverArgs.getOrDefault("prefix", "Ex");
-        List<String> results = IntStream.range(0, count).mapToObj(i -> {
-            try {
-                String resp = webClient.post().uri("/rest/example-rest/example")
+
+        List<String> results = reactor.core.publisher.Flux.range(0, count)
+                .flatMap(i -> webClient.post().uri("/rest/example-rest/example")
                         .header("Authorization", "Bearer " + appConfig.getBackendAccessToken())
                         .bodyValue(Map.of("exampleName", prefix + " " + (i + 1), "exampleTypeId", "CONTRIVED",
                                 "statusId", "EXST_IN_DESIGN"))
-                        .retrieve().bodyToMono(String.class).block();
-                return mapper.readTree(resp).path("data").path("exampleId").asText();
-            } catch (Exception e) {
-                return "Error: " + e.getMessage();
-            }
-        }).toList();
+                        .retrieve().bodyToMono(String.class)
+                        .map(resp -> {
+                            try {
+                                return mapper.readTree(resp).path("data").path("exampleId").asText();
+                            } catch (Exception e) {
+                                return "Error parsing: " + e.getMessage();
+                            }
+                        })
+                        .onErrorResume(e -> reactor.core.publisher.Mono.just("Error: " + e.getMessage())))
+                .collectList().block();
+
         return Map.of("content", List.of(Map.of("type", "text", "text", "Result: " + results)));
     }
 }

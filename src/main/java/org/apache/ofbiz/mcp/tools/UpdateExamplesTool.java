@@ -4,7 +4,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.apache.ofbiz.mcp.config.AppConfig;
 import org.springframework.stereotype.Component;
 import java.time.Instant;
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Map;
 
@@ -41,36 +41,27 @@ public class UpdateExamplesTool implements ToolHandler {
         List<String> ids = (List<String>) arguments.getOrDefault("ids", List.of());
         String descriptionTemplate = (String) arguments.getOrDefault("description", "Updated at " + Instant.now());
 
-        List<String> successIds = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
+        List<String> results = reactor.core.publisher.Flux.fromIterable(ids)
+                .flatMap(id -> {
+                    String description = descriptionTemplate + " " + Instant.now();
+                    Map<String, Object> payload = Map.of(
+                            "exampleId", id,
+                            "description", description);
 
-        for (String id : ids) {
-            String description = descriptionTemplate + " " + Instant.now();
+                    return webClient.put()
+                            .uri("/rest/example-rest/example")
+                            .header("Authorization", "Bearer " + appConfig.getBackendAccessToken())
+                            .bodyValue(payload)
+                            .retrieve()
+                            .toBodilessEntity()
+                            .thenReturn(id)
+                            .onErrorResume(e -> reactor.core.publisher.Mono
+                                    .just("Error updating example " + id + ": " + e.getMessage()));
+                })
+                .collectList()
+                .block();
 
-            Map<String, Object> payload = Map.of(
-                    "exampleId", id,
-                    "description", description);
-
-            try {
-                webClient.put()
-                        .uri("/rest/example-rest/example")
-                        .header("Authorization", "Bearer " + appConfig.getBackendAccessToken())
-                        .bodyValue(payload)
-                        .retrieve()
-                        .toBodilessEntity()
-                        .block();
-
-                successIds.add(id);
-
-            } catch (Exception e) {
-                errors.add("Error updating example " + id + ": " + e.getMessage());
-            }
-        }
-
-        String resultText = "Updated " + successIds.size() + " examples. IDs: " + successIds;
-        if (!errors.isEmpty()) {
-            resultText += "\nErrors: " + errors;
-        }
+        String resultText = "Updated " + results.size() + " examples. IDs: " + results;
 
         return Map.of("content", java.util.List.of(
                 Map.of("type", "text", "text", resultText)));
