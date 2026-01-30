@@ -85,6 +85,11 @@ public class ExampleRunner {
                 int dCount = actionArgs.length > 1 ? Integer.parseInt(actionArgs[1]) : 2;
                 runCustomScenario(createTool, updateTool, deleteTool, cCount, dCount);
                 break;
+            case "update-last":
+                // Args: count
+                int uCount = actionArgs.length > 0 ? Integer.parseInt(actionArgs[0]) : 5;
+                runUpdateLast(updateTool, config, webClientBuilder, uCount);
+                break;
             default:
                 System.out.println("Unknown action: " + action
                         + ". Use 'create', 'update', 'delete', 'test-all', or 'test-scenario'.");
@@ -192,5 +197,51 @@ public class ExampleRunner {
         System.out.println("Deleted IDs: " + deletedIds);
 
         System.out.println("\n=== Scenario Completed ===");
+    }
+
+    private static void runUpdateLast(UpdateExamplesTool tool, AppConfig config, WebClient.Builder webClientBuilder,
+            int count) {
+        System.out.println("--- Running UpdateExamplesTool (Last " + count + ") ---");
+
+        // 1. Fetch IDs (Using logic similar to DeleteExamplesTool)
+        System.out.println("Fetching last " + count + " examples...");
+        WebClient client = webClientBuilder.baseUrl(config.getBackendApiBase()).build();
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<String> ids;
+        try {
+            String resp = client.get().uri("/rest/example-rest/example")
+                    .header("Authorization", "Bearer " + config.getBackendAccessToken())
+                    .retrieve()
+                    .bodyToMono(String.class).block();
+
+            ids = java.util.stream.StreamSupport
+                    .stream(mapper.readTree(resp).path("data").path("exampleList").spliterator(), false)
+                    .map(n -> n.path("exampleId").asText())
+                    .sorted((s1, s2) -> Long.compare(Long.parseLong(s2), Long.parseLong(s1)))
+                    .limit(count)
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (ids.isEmpty()) {
+                System.out.println("No examples found to update.");
+                return;
+            }
+            System.out.println("Found IDs: " + ids);
+
+        } catch (Exception e) {
+            System.err.println("Error fetching IDs: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+
+        // 2. Execute Update
+        System.out.println("Updating " + ids.size() + " examples...");
+        Map<String, Object> arguments = Map.of(
+                "ids", ids,
+                "description", "Bulk Update via Runner "); // Timestamp is added by the tool
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = (Map<String, Object>) tool.execute(arguments, null);
+        System.out.println("Result: " + result.get("content"));
     }
 }
